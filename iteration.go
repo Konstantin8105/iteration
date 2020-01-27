@@ -1,9 +1,11 @@
-# iteration
-iteration by single variable
+package iteration
 
-```
-package iteration // import "."
+import (
+	"fmt"
+	"math"
+)
 
+// Constants
 const (
 	// Precision of rott-finding
 	Precision float64 = 1e-6
@@ -40,8 +42,24 @@ const (
 	//
 	MaxIteration int = 500
 )
-    Constants
 
-func Run(x *float64, f func() error) error
-    Run iteration by single variable
-```
+// Run iteration by single variable
+func Run(x *float64, f func() error) error {
+	maxIter, precision := MaxIteration, Precision
+	for iter, xLast := 0, *x; ; iter++ {
+		if iter >= maxIter {
+			return fmt.Errorf("max iter error")
+		}
+		if err := f(); err != nil {
+			return fmt.Errorf("%v", err)
+		}
+		if math.Abs(*x-xLast) < precision {
+			break
+		}
+		// calculate value for next iteration
+		*x = xLast + (*x-xLast)/2.0
+		// store last iteration value
+		xLast = *x
+	}
+	return nil
+}
