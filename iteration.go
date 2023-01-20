@@ -51,13 +51,18 @@ var (
 )
 
 // Run iteration by single variable
-func Run(x *float64, f func() error) error {
+func Find(x *float64, f func() error)(err error) {
+	defer func() {
+		if err != nil {
+			err = fmt.Errorf("iteration.Find: %v", err)
+		}
+	}()
 	maxIter, precision, ratio := MaxIteration, Precision, Ratio
 	for iter, xLast := 0, *x; ; iter++ {
 		if iter >= maxIter {
 			return fmt.Errorf("max iter error")
 		}
-		if err := f(); err != nil {
+		if err = f(); err != nil {
 			return fmt.Errorf("%v", err)
 		}
 		if math.Abs(*x-xLast) < precision {

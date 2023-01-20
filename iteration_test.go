@@ -9,7 +9,7 @@ import (
 func Example() {
 	var x float64
 	var counter int
-	if err := Run(&x, func() error {
+	if err := Find(&x, func() error {
 		counter++
 		fmt.Fprintf(os.Stdout, "Value for iteration %2d is %10.8e\n", counter, x)
 		x = 5
@@ -42,7 +42,7 @@ func Example() {
 
 func TestFunc(t *testing.T) {
 	var x float64
-	if err := Run(&x, func() error {
+	if err := Find(&x, func() error {
 		x += 1.0
 		return fmt.Errorf("Internal error")
 	}); err == nil {
@@ -53,7 +53,7 @@ func TestFunc(t *testing.T) {
 
 func TestMaxIter(t *testing.T) {
 	var x float64
-	if err := Run(&x, func() error {
+	if err := Find(&x, func() error {
 		x += 1.0
 		return nil
 	}); err == nil {
