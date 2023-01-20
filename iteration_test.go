@@ -36,8 +36,6 @@ func Example() {
 	// Value for iteration 14 is 4.99998158e+00
 	// Value for iteration 15 is 4.99999296e+00
 	// Value for iteration 16 is 4.99999731e+00
-	// Value for iteration 17 is 4.99999897e+00
-	// Value for iteration 18 is 4.99999961e+00
 }
 
 func TestFunc(t *testing.T) {

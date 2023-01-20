@@ -51,7 +51,7 @@ var (
 )
 
 // Run iteration by single variable
-func Find(x *float64, f func() error)(err error) {
+func Find(x *float64, f func() error) (err error) {
 	defer func() {
 		if err != nil {
 			err = fmt.Errorf("iteration.Find: %v", err)
@@ -65,8 +65,14 @@ func Find(x *float64, f func() error)(err error) {
 		if err = f(); err != nil {
 			return fmt.Errorf("%v", err)
 		}
-		if math.Abs(*x-xLast) < precision {
-			break
+		if xLast == 0.0 {
+			if math.Abs(*x) < precision {
+				break
+			}
+		} else {
+			if math.Abs((*x-xLast)/xLast) < precision {
+				break
+			}
 		}
 		// calculate value for next iteration
 		*x = xLast + (*x-xLast)*ratio
