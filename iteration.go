@@ -51,33 +51,48 @@ var (
 )
 
 // Run iteration by single variable
-func Find(x *float64, f func() error) (err error) {
+func Find(f func() error, xs ...*float64) (err error) {
 	defer func() {
 		if err != nil {
 			err = fmt.Errorf("iteration.Find: %v", err)
 		}
 	}()
 	maxIter, precision, ratio := MaxIteration, Precision, Ratio
-	for iter, xLast := 0, *x; ; iter++ {
+	xLast := make([]float64, len(xs))
+	for i := range xs {
+		xLast[i] = *xs[i]
+	}
+	exit := false
+	for iter := 0; ; iter++ {
 		if iter >= maxIter {
 			return fmt.Errorf("max iter error")
 		}
 		if err = f(); err != nil {
 			return fmt.Errorf("%v", err)
 		}
-		if xLast == 0.0 {
-			if math.Abs(*x) < precision {
-				break
-			}
-		} else {
-			if math.Abs((*x-xLast)/xLast) < precision {
-				break
+		exit = true
+		for i := range xLast {
+			if xLast[i] == 0.0 {
+				if precision < math.Abs(*xs[i]) {
+					exit = false
+				}
+			} else {
+				if precision < math.Abs((*xs[i]-xLast[i])/xLast[i]) {
+					exit = false
+				}
 			}
 		}
+		if exit {
+			break
+		}
 		// calculate value for next iteration
-		*x = xLast + (*x-xLast)*ratio
+		for i := range xLast {
+			*xs[i] = xLast[i] + (*xs[i]-xLast[i])*ratio
+		}
 		// store last iteration value
-		xLast = *x
+		for i := range xs {
+			xLast[i] = *xs[i]
+		}
 	}
 	return nil
 }
