@@ -72,6 +72,12 @@ func Find(f func() error, xs ...*float64) (err error) {
 		}
 		exit = true
 		for i := range xLast {
+			if math.IsNaN(*xs[i]) {
+				return fmt.Errorf("Parameter %d is NaN", i)
+			}
+			if math.IsInf(*xs[i], 0) {
+				return fmt.Errorf("Parameter %d is infinity", i)
+			}
 			if xLast[i] == 0.0 {
 				if precision < math.Abs(*xs[i]) {
 					exit = false
