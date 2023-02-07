@@ -2,9 +2,11 @@
 iteration by single variable
 
 ```
-package iteration // import "."
+package iteration // import "github.com/Konstantin8105/iteration"
 
-const (
+VARIABLES
+
+var (
 	// Precision of rott-finding
 	Precision float64 = 1e-6
 
@@ -47,7 +49,11 @@ const (
 	//
 	Ratio float64 = 2.0 / (1.0 + math.Sqrt(5.0))
 )
+    Constants
 
-func Run(x *float64, f func() error) error
-    Run iteration by single variable
+
+FUNCTIONS
+
+func Find(f func() error, xs ...*float64) (err error)
+    Run iteration by many variable
 ```

@@ -50,7 +50,7 @@ var (
 	Ratio float64 = 2.0 / (1.0 + math.Sqrt(5.0))
 )
 
-// Run iteration by single variable
+// Run iteration by many variable
 func Find(f func() error, xs ...*float64) (err error) {
 	defer func() {
 		if err != nil {
