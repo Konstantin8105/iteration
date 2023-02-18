@@ -63,6 +63,7 @@ type ErrType int8
 
 const (
 	MaximalIteration ErrType = iota
+	InternalErr
 	NotValidValue
 )
 
@@ -70,6 +71,8 @@ func (et ErrType) String() string {
 	switch et {
 	case MaximalIteration:
 		return "max iteration"
+	case InternalErr:
+		return "internal error"
 	case NotValidValue:
 		return "not valid value"
 	}
@@ -94,7 +97,10 @@ func Find(f func() error, xs ...*float64) (err error) {
 			return ErrorFind{Type: MaximalIteration}
 		}
 		if err = f(); err != nil {
-			return err
+			return ErrorFind{
+				Type: InternalErr,
+				Err:  err,
+			}
 		}
 		exit = true
 		for i := range xLast {
