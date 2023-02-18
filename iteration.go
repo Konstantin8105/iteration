@@ -81,11 +81,6 @@ func (et ErrType) String() string {
 
 // Run iteration by many variable
 func Find(f func() error, xs ...*float64) (err error) {
-	defer func() {
-		if err != nil {
-			err = fmt.Errorf("iteration.Find: %v", err)
-		}
-	}()
 	maxIter, precision, ratio := MaxIteration, Precision, Ratio
 	xLast := make([]float64, len(xs))
 	for i := range xs {
