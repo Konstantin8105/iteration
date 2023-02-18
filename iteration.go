@@ -50,6 +50,32 @@ var (
 	Ratio float64 = 2.0 / (1.0 + math.Sqrt(5.0))
 )
 
+type ErrorFind struct {
+	Type ErrType
+	Err  error
+}
+
+func (e ErrorFind) Error() string {
+	return fmt.Sprintf("%s:%s", e.Type, e.Err)
+}
+
+type ErrType int8
+
+const (
+	MaximalIteration ErrType = iota
+	NotValidValue
+)
+
+func (et ErrType) String() string {
+	switch et {
+	case MaximalIteration:
+		return "max iteration"
+	case NotValidValue:
+		return "not valid value"
+	}
+	return "undefined"
+}
+
 // Run iteration by many variable
 func Find(f func() error, xs ...*float64) (err error) {
 	defer func() {
@@ -65,18 +91,24 @@ func Find(f func() error, xs ...*float64) (err error) {
 	exit := false
 	for iter := 0; ; iter++ {
 		if iter >= maxIter {
-			return fmt.Errorf("max iter error")
+			return ErrorFind{Type: MaximalIteration}
 		}
 		if err = f(); err != nil {
-			return fmt.Errorf("%v", err)
+			return err
 		}
 		exit = true
 		for i := range xLast {
 			if math.IsNaN(*xs[i]) {
-				return fmt.Errorf("Parameter %d is NaN", i)
+				return ErrorFind{
+					Type: NotValidValue,
+					Err:  fmt.Errorf("Parameter %d is NaN", i),
+				}
 			}
 			if math.IsInf(*xs[i], 0) {
-				return fmt.Errorf("Parameter %d is infinity", i)
+				return ErrorFind{
+					Type: NotValidValue,
+					Err:  fmt.Errorf("Parameter %d is infinity", i),
+				}
 			}
 			if xLast[i] == 0.0 {
 				if precision < math.Abs(*xs[i]) {
