@@ -50,6 +50,12 @@ var (
 	Ratio float64 = 2.0 / (1.0 + math.Sqrt(5.0))
 )
 
+type Option struct {
+	MaxIteration int
+	Ratio        float64
+	Precision    float64
+}
+
 type ErrorFind struct {
 	Type ErrType
 	Err  error
@@ -65,6 +71,7 @@ const (
 	MaximalIteration ErrType = iota
 	InternalErr
 	NotValidValue
+	NotValidInput
 )
 
 func (et ErrType) String() string {
@@ -75,20 +82,53 @@ func (et ErrType) String() string {
 		return "internal error"
 	case NotValidValue:
 		return "not valid value"
+	case NotValidInput:
+		return "not valid input value"
 	}
 	return "undefined"
 }
 
 // Run iteration by many variable
 func Find(f func() error, xs ...*float64) (err error) {
-	maxIter, precision, ratio := MaxIteration, Precision, Ratio
+	return FindWithOption(f, Option{
+		MaxIteration: MaxIteration,
+		Ratio:        Ratio,
+		Precision:    Precision,
+	}, xs...)
+}
+
+func FindWithOption(f func() error, option Option, xs ...*float64) (err error) {
+	if option.MaxIteration <= 0 {
+		return ErrorFind{
+			Type: NotValidInput,
+			Err:  fmt.Errorf("max iteration is negative or zero"),
+		}
+	}
+	if option.Ratio <= 0 {
+		return ErrorFind{
+			Type: NotValidInput,
+			Err:  fmt.Errorf("ratio is negative or zero"),
+		}
+	}
+	if option.Precision <= 0 {
+		return ErrorFind{
+			Type: NotValidInput,
+			Err:  fmt.Errorf("precision is negative or zero"),
+		}
+	}
+	if f == nil {
+		return ErrorFind{
+			Type: NotValidInput,
+			Err:  fmt.Errorf("function is null"),
+		}
+	}
 	xLast := make([]float64, len(xs))
 	for i := range xs {
 		xLast[i] = *xs[i]
 	}
 	exit := false
 	for iter := 0; ; iter++ {
-		if iter >= maxIter {
+		if iter >= option.MaxIteration {
 			return ErrorFind{Type: MaximalIteration}
 		}
 		if err = f(); err != nil {
@@ -112,11 +152,11 @@ func Find(f func() error, xs ...*float64) (err error) {
 				}
 			}
 			if xLast[i] == 0.0 {
-				if precision < math.Abs(*xs[i]) {
+				if option.Precision < math.Abs(*xs[i]) {
 					exit = false
 				}
 			} else {
-				if precision < math.Abs((*xs[i]-xLast[i])/xLast[i]) {
+				if option.Precision < math.Abs((*xs[i]-xLast[i])/xLast[i]) {
 					exit = false
 				}
 			}
@@ -126,7 +166,7 @@ func Find(f func() error, xs ...*float64) (err error) {
 		}
 		// calculate value for next iteration
 		for i := range xLast {
-			*xs[i] = xLast[i] + (*xs[i]-xLast[i])*ratio
+			*xs[i] = xLast[i] + (*xs[i]-xLast[i])*option.Ratio
 		}
 		// store last iteration value
 		for i := range xs {

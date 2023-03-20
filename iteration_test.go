@@ -96,3 +96,44 @@ func TestMaxIter(t *testing.T) {
 		return
 	}
 }
+
+func TestWrong(t *testing.T) {
+	var x float64
+	if err := FindWithOption(func() error {
+		x += 1
+		return nil
+	}, Option{
+		MaxIteration: 0,
+		Ratio:        0.1,
+		Precision:    0.1,
+	}, &x); err == nil {
+		t.Fatalf("not valid max iteration")
+	}
+	if err := FindWithOption(func() error {
+		x += 1
+		return nil
+	}, Option{
+		MaxIteration: 10,
+		Ratio:        0,
+		Precision:    0.1,
+	}, &x); err == nil {
+		t.Fatalf("not valid ratio")
+	}
+	if err := FindWithOption(func() error {
+		x += 1
+		return nil
+	}, Option{
+		MaxIteration: 10,
+		Ratio:        0.1,
+		Precision:    0,
+	}, &x); err == nil {
+		t.Fatalf("not valid ratio")
+	}
+	if err := FindWithOption(nil, Option{
+		MaxIteration: 10,
+		Ratio:        0.1,
+		Precision:    0.1,
+	}, &x); err == nil {
+		t.Fatalf("not valid function")
+	}
+}
