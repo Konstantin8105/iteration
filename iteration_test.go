@@ -2,9 +2,39 @@ package iteration
 
 import (
 	"fmt"
+	"math"
 	"os"
 	"testing"
 )
+
+// cpu: Intel(R) Xeon(R) CPU           X5550  @ 2.67GHz
+// Benchmark/single-8         	 3743305	       305.4 ns/op	       8 B/op	       1 allocs/op
+// Benchmark/two-8            	 1902074	       618.8 ns/op	      16 B/op	       1 allocs/op
+func Benchmark(b *testing.B) {
+	b.Run("single", func(b *testing.B) {
+		for n := 0; n < b.N; n++ {
+			var x float64
+			if err := Find(func() error {
+				x = 5
+				return nil
+			}, &x); err != nil {
+				b.Fatal(err)
+			}
+		}
+	})
+	b.Run("two", func(b *testing.B) {
+		for n := 0; n < b.N; n++ {
+			var x, y float64
+			if err := Find(func() error {
+				y = 1 + x
+				x = 5
+				return nil
+			}, &x, &y); err != nil {
+				b.Fatal(err)
+			}
+		}
+	})
+}
 
 func Example() {
 	var x float64
@@ -136,4 +166,78 @@ func TestWrong(t *testing.T) {
 	}, &x); err == nil {
 		t.Fatalf("not valid function")
 	}
+}
+
+func TestErrorType(t *testing.T) {
+	t.Run("some error", func(t *testing.T) {
+		var x float64
+		err := Find(func() error {
+			return fmt.Errorf("some error")
+		}, &x)
+		if err == nil {
+			t.Errorf("have not errors")
+		}
+		fmt.Fprintf(os.Stdout, "%v\n", err)
+	})
+	t.Run("infinite1", func(t *testing.T) {
+		var x float64
+		err := Find(func() error {
+			x = math.Inf(1)
+			return nil
+		}, &x)
+		if err == nil {
+			t.Errorf("have not errors")
+		}
+		fmt.Fprintf(os.Stdout, "%v\n", err)
+	})
+	t.Run("infinite0", func(t *testing.T) {
+		var x float64
+		err := Find(func() error {
+			x = math.Inf(0)
+			return nil
+		}, &x)
+		if err == nil {
+			t.Errorf("have not errors")
+		}
+		fmt.Fprintf(os.Stdout, "%v\n", err)
+	})
+	t.Run("infinite-1", func(t *testing.T) {
+		var x float64
+		err := Find(func() error {
+			x = math.Inf(-1)
+			return nil
+		}, &x)
+		if err == nil {
+			t.Errorf("have not errors")
+		}
+		fmt.Fprintf(os.Stdout, "%v\n", err)
+	})
+	t.Run("NaN", func(t *testing.T) {
+		var x float64
+		err := Find(func() error {
+			x = math.NaN()
+			return nil
+		}, &x)
+		if err == nil {
+			t.Errorf("have not errors")
+		}
+		fmt.Fprintf(os.Stdout, "%v\n", err)
+	})
+	t.Run("infinite", func(t *testing.T) {
+		var x float64
+		var b bool
+		err := Find(func() error {
+			if b {
+				x += 1
+			} else {
+				x -= 1
+			}
+			b = !b
+			return nil
+		}, &x)
+		if err == nil {
+			t.Errorf("have not errors")
+		}
+		fmt.Fprintf(os.Stdout, "%v\n", err)
+	})
 }

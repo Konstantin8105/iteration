@@ -129,7 +129,10 @@ func FindWithOption(f func() error, option Option, xs ...*float64) (err error) {
 	exit := false
 	for iter := 0; ; iter++ {
 		if iter >= option.MaxIteration {
-			return ErrorFind{Type: MaximalIteration}
+			return ErrorFind{
+				Type: MaximalIteration,
+				Err:  fmt.Errorf("%d >= %d", iter, option.MaxIteration),
+			}
 		}
 		if err = f(); err != nil {
 			return ErrorFind{
