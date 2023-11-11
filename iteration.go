@@ -50,12 +50,14 @@ var (
 	Ratio float64 = 2.0 / (1.0 + math.Sqrt(5.0))
 )
 
+// Option of finding by iterations
 type Option struct {
 	MaxIteration int
 	Ratio        float64
 	Precision    float64
 }
 
+// ErrorFind is typical errors of functions `Find`
 type ErrorFind struct {
 	Type ErrType
 	Err  error
@@ -65,8 +67,10 @@ func (e ErrorFind) Error() string {
 	return fmt.Sprintf("%s:%s", e.Type, e.Err)
 }
 
+// ErrType is value of error
 type ErrType int8
 
+// Error values
 const (
 	MaximalIteration ErrType = iota
 	InternalErr
@@ -88,7 +92,7 @@ func (et ErrType) String() string {
 	return "undefined"
 }
 
-// Run iteration by many variable
+// Find result with many variable and default options
 func Find(f func() error, xs ...*float64) (err error) {
 	return FindWithOption(f, Option{
 		MaxIteration: MaxIteration,
@@ -97,6 +101,7 @@ func Find(f func() error, xs ...*float64) (err error) {
 	}, xs...)
 }
 
+// FindWithOption result with many variable and option
 func FindWithOption(f func() error, option Option, xs ...*float64) (err error) {
 	if option.MaxIteration <= 0 {
 		return ErrorFind{
@@ -145,13 +150,13 @@ func FindWithOption(f func() error, option Option, xs ...*float64) (err error) {
 			if math.IsNaN(*xs[i]) {
 				return ErrorFind{
 					Type: NotValidValue,
-					Err:  fmt.Errorf("Parameter %d is NaN", i),
+					Err:  fmt.Errorf("parameter %d is NaN", i),
 				}
 			}
 			if math.IsInf(*xs[i], 0) {
 				return ErrorFind{
 					Type: NotValidValue,
-					Err:  fmt.Errorf("Parameter %d is infinity", i),
+					Err:  fmt.Errorf("parameter %d is infinity", i),
 				}
 			}
 			if xLast[i] == 0.0 {
