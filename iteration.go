@@ -93,16 +93,22 @@ func (et ErrType) String() string {
 }
 
 // Find result with many variable and default options
-func Find[F64  ~float64](f func() error, xs ...*F64) (err error) {
+func Find[F64A ~float64, F64B ~float64, F64C ~float64](f func() error, xsA []*F64A, xsB []*F64B, xsC []*F64C) (err error) {
 	return FindWithOption(f, Option{
 		MaxIteration: MaxIteration,
 		Ratio:        Ratio,
 		Precision:    Precision,
-	}, xs...)
+	}, xsA, xsB, xsC)
 }
 
 // FindWithOption result with many variable and option
-func FindWithOption[F64 ~float64](f func() error, option Option, xs... *F64) (err error) {
+func FindWithOption[F64A ~float64, F64B ~float64, F64C ~float64](
+	f func() error,
+	option Option,
+	xsA []*F64A,
+	xsB []*F64B,
+	xsC []*F64C,
+) (err error) {
 	if option.MaxIteration <= 0 {
 		return ErrorFind{
 			Type: NotValidInput,
@@ -127,11 +133,20 @@ func FindWithOption[F64 ~float64](f func() error, option Option, xs... *F64) (er
 			Err:  fmt.Errorf("function is null"),
 		}
 	}
-	xLast := make([]F64, len(xs))
-	for i := range xs {
-		xLast[i] = *xs[i]
+	xLastA := make([]F64A, len(xsA))
+	xLastB := make([]F64B, len(xsB))
+	xLastC := make([]F64C, len(xsC))
+	for i := range xsA {
+		xLastA[i] = *xsA[i]
 	}
-	exit := false
+	for i := range xsB {
+		xLastB[i] = *xsB[i]
+	}
+	for i := range xsC {
+		xLastC[i] = *xsC[i]
+	}
+
+	var exitA, exitB, exitC bool
 	for iter := 0; ; iter++ {
 		if iter >= option.MaxIteration {
 			return ErrorFind{
@@ -145,33 +160,55 @@ func FindWithOption[F64 ~float64](f func() error, option Option, xs... *F64) (er
 				Err:  err,
 			}
 		}
-		exit = true
-		for i := range xLast {
-			if math.IsNaN(float64(*xs[i])) {
-				return ErrorFind{
-					Type: NotValidValue,
-					Err:  fmt.Errorf("parameter %d is NaN", i),
-				}
-			}
-			if math.IsInf(float64(*xs[i]), 0) {
-				return ErrorFind{
-					Type: NotValidValue,
-					Err:  fmt.Errorf("parameter %d is infinity", i),
-				}
-			}
-			if xLast[i] == 0.0 {
-				if option.Precision < math.Abs(float64(*xs[i]) ){
-					exit = false
-				}
-			} else {
-				if option.Precision < math.Abs(float64((*xs[i]-xLast[i])/xLast[i])) {
-					exit = false
-				}
-			}
+		// xsA
+		exitA, err = compare(xLastA, xsA, option)
+		if err != nil {
+			return
 		}
-		if exit {
+		// xsB
+		exitB, err = compare(xLastB, xsB, option)
+		if err != nil {
+			return
+		}
+		// xsC
+		exitC, err = compare(xLastC, xsC, option)
+		if err != nil {
+			return
+		}
+		// is exit
+		if exitA && exitB && exitC {
 			break
 		}
+	}
+	return nil
+}
+
+func compare[F64 ~float64](xLast []F64, xs []*F64, option Option) (exit bool, err error) {
+	exit = true
+	for i := range xLast {
+		if math.IsNaN(float64(*xs[i])) {
+			return true, ErrorFind{
+				Type: NotValidValue,
+				Err:  fmt.Errorf("parameter %d is NaN", i),
+			}
+		}
+		if math.IsInf(float64(*xs[i]), 0) {
+			return true, ErrorFind{
+				Type: NotValidValue,
+				Err:  fmt.Errorf("parameter %d is infinity", i),
+			}
+		}
+		if xLast[i] == 0.0 {
+			if option.Precision < math.Abs(float64(*xs[i])) {
+				exit = false
+			}
+		} else {
+			if option.Precision < math.Abs(float64((*xs[i]-xLast[i])/xLast[i])) {
+				exit = false
+			}
+		}
+	}
+	if !exit {
 		// calculate value for next iteration
 		for i := range xLast {
 			*xs[i] = xLast[i] + (*xs[i]-xLast[i])*F64(option.Ratio)
@@ -181,5 +218,5 @@ func FindWithOption[F64 ~float64](f func() error, option Option, xs... *F64) (er
 			xLast[i] = *xs[i]
 		}
 	}
-	return nil
+	return
 }

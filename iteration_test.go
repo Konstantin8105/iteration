@@ -14,6 +14,9 @@ import (
 // cpu: Intel(R) Xeon(R) CPU E3-1240 V2 @ 3.40GHz
 // Benchmark/single-6         	 5913253	       198.9 ns/op	       8 B/op	       1 allocs/op
 // Benchmark/two-6            	 3717120	       320.6 ns/op	      16 B/op	       1 allocs/op
+//
+// Benchmark/single-6         	 2873384	       426.1 ns/op	       8 B/op	       1 allocs/op
+// Benchmark/two-6            	 1854848	       611.7 ns/op	      16 B/op	       2 allocs/op
 func Benchmark(b *testing.B) {
 	b.Run("single", func(b *testing.B) {
 		for n := 0; n < b.N; n++ {
@@ -21,7 +24,7 @@ func Benchmark(b *testing.B) {
 			if err := Find(func() error {
 				x = 5
 				return nil
-			}, &x); err != nil {
+			}, []*float64{&x}, []*float64{}, []*float64{}); err != nil {
 				b.Fatal(err)
 			}
 		}
@@ -33,7 +36,7 @@ func Benchmark(b *testing.B) {
 				y = 1 + x
 				x = 5
 				return nil
-			}, &x, &y); err != nil {
+			}, []*float64{&x}, []*float64{&y}, []*float64{}); err != nil {
 				b.Fatal(err)
 			}
 		}
@@ -48,7 +51,7 @@ func Example() {
 		fmt.Fprintf(os.Stdout, "Value for iteration %2d is %10.8e\n", counter, x)
 		x = 5
 		return nil
-	}, &x); err != nil {
+	}, []*float64{&x}, []*float64{}, []*float64{}); err != nil {
 		fmt.Fprintf(os.Stdout, "Error: %v", err)
 		return
 	}
@@ -82,7 +85,7 @@ func ExampleFind() {
 		y = 1 + x
 		x = 5
 		return nil
-	}, &x, &y); err != nil {
+	}, []*float64{&x, &y}, []*float64{}, []*float64{}); err != nil {
 		fmt.Fprintf(os.Stdout, "Error: %v", err)
 		return
 	}
@@ -117,7 +120,7 @@ func Test(t *testing.T) {
 			y = 1 + x
 			x = 5
 			return nil
-		}, &x, &y); err != nil {
+		}, []*float64{&x}, []*float64{&y}, []*float64{}); err != nil {
 			t.Fatal(err)
 		}
 		if e := math.Abs((float64(x) - 5) / 5); eps < e {
@@ -127,14 +130,14 @@ func Test(t *testing.T) {
 			t.Errorf("not valid root")
 		}
 	})
-	t.Run("F64", func(t *testing.T) {
+	t.Run("F64-1", func(t *testing.T) {
 		type F64 float64
 		var x, y F64
 		if err := Find(func() error {
 			y = 1 + x
 			x = 5
 			return nil
-		}, &x, &y); err != nil {
+		}, []*F64{&x, &y}, []*float64{}, []*float64{}); err != nil {
 			t.Fatal(err)
 		}
 		if e := math.Abs((float64(x) - 5) / 5); eps < e {
@@ -144,24 +147,58 @@ func Test(t *testing.T) {
 			t.Errorf("not valid root")
 		}
 	})
-	// TODO t.Run("float64+F64", func(t *testing.T) {
-	// TODO 	type F64 float64
-	// TODO 	var x float64
-	// TODO 	var y F64
-	// TODO 	if err := Find(func() error {
-	// TODO 		y = 1 + F64(x)
-	// TODO 		x = 5
-	// TODO 		return nil
-	// TODO 	}, &x, &y); err != nil {
-	// TODO 		t.Fatal(err)
-	// TODO 	}
-	// TODO 	if e := math.Abs((float64(x) - 5) / 5); eps < e {
-	// TODO 		t.Errorf("not valid root")
-	// TODO 	}
-	// TODO 	if e := math.Abs((float64(y) - 6) / 6); eps < e {
-	// TODO 		t.Errorf("not valid root")
-	// TODO 	}
-	// TODO })
+	t.Run("F64-2", func(t *testing.T) {
+		type F64 float64
+		var x, y F64
+		if err := Find(func() error {
+			y = 1 + x
+			x = 5
+			return nil
+		}, []*F64{}, []*F64{&x, &y}, []*float64{}); err != nil {
+			t.Fatal(err)
+		}
+		if e := math.Abs((float64(x) - 5) / 5); eps < e {
+			t.Errorf("not valid root")
+		}
+		if e := math.Abs((float64(y) - 6) / 6); eps < e {
+			t.Errorf("not valid root")
+		}
+	})
+	t.Run("F64-3", func(t *testing.T) {
+		type F64 float64
+		var x, y F64
+		if err := Find(func() error {
+			y = 1 + x
+			x = 5
+			return nil
+		}, []*F64{}, []*float64{}, []*F64{&x, &y}); err != nil {
+			t.Fatal(err)
+		}
+		if e := math.Abs((float64(x) - 5) / 5); eps < e {
+			t.Errorf("not valid root")
+		}
+		if e := math.Abs((float64(y) - 6) / 6); eps < e {
+			t.Errorf("not valid root")
+		}
+	})
+	t.Run("float64+F64", func(t *testing.T) {
+		type F64 float64
+		var x float64
+		var y F64
+		if err := Find(func() error {
+			y = 1 + F64(x)
+			x = 5
+			return nil
+		}, []*float64{&x}, []*F64{&y}, []*float64{}); err != nil {
+			t.Fatal(err)
+		}
+		if e := math.Abs((float64(x) - 5) / 5); eps < e {
+			t.Errorf("not valid root")
+		}
+		if e := math.Abs((float64(y) - 6) / 6); eps < e {
+			t.Errorf("not valid root")
+		}
+	})
 }
 
 func TestFunc(t *testing.T) {
@@ -169,7 +206,7 @@ func TestFunc(t *testing.T) {
 	if err := Find(func() error {
 		x += 1.0
 		return fmt.Errorf("Internal error")
-	}, &x); err == nil {
+	}, []*float64{&x}, []*float64{}, []*float64{}); err == nil {
 		t.Errorf("cannot found internal error")
 		return
 	}
@@ -180,7 +217,7 @@ func TestMaxIter(t *testing.T) {
 	if err := Find(func() error {
 		x += 1.0
 		return nil
-	}, &x); err == nil {
+	}, []*float64{&x}, []*float64{}, []*float64{}); err == nil {
 		t.Errorf("cannot found max iter error")
 		return
 	}
@@ -195,7 +232,7 @@ func TestWrong(t *testing.T) {
 		MaxIteration: 0,
 		Ratio:        0.1,
 		Precision:    0.1,
-	}, &x); err == nil {
+	}, []*float64{&x}, []*float64{}, []*float64{}); err == nil {
 		t.Fatalf("not valid max iteration")
 	}
 	if err := FindWithOption(func() error {
@@ -205,7 +242,7 @@ func TestWrong(t *testing.T) {
 		MaxIteration: 10,
 		Ratio:        0,
 		Precision:    0.1,
-	}, &x); err == nil {
+	}, []*float64{&x}, []*float64{}, []*float64{}); err == nil {
 		t.Fatalf("not valid ratio")
 	}
 	if err := FindWithOption(func() error {
@@ -215,14 +252,14 @@ func TestWrong(t *testing.T) {
 		MaxIteration: 10,
 		Ratio:        0.1,
 		Precision:    0,
-	}, &x); err == nil {
+	}, []*float64{&x}, []*float64{}, []*float64{}); err == nil {
 		t.Fatalf("not valid ratio")
 	}
 	if err := FindWithOption(nil, Option{
 		MaxIteration: 10,
 		Ratio:        0.1,
 		Precision:    0.1,
-	}, &x); err == nil {
+	}, []*float64{&x}, []*float64{}, []*float64{}); err == nil {
 		t.Fatalf("not valid function")
 	}
 }
@@ -232,7 +269,7 @@ func TestErrorType(t *testing.T) {
 		var x float64
 		err := Find(func() error {
 			return fmt.Errorf("some error")
-		}, &x)
+		}, []*float64{&x}, []*float64{}, []*float64{})
 		if err == nil {
 			t.Errorf("have not errors")
 		}
@@ -243,7 +280,7 @@ func TestErrorType(t *testing.T) {
 		err := Find(func() error {
 			x = math.Inf(1)
 			return nil
-		}, &x)
+		}, []*float64{&x}, []*float64{}, []*float64{})
 		if err == nil {
 			t.Errorf("have not errors")
 		}
@@ -254,7 +291,7 @@ func TestErrorType(t *testing.T) {
 		err := Find(func() error {
 			x = math.Inf(0)
 			return nil
-		}, &x)
+		}, []*float64{&x}, []*float64{}, []*float64{})
 		if err == nil {
 			t.Errorf("have not errors")
 		}
@@ -265,7 +302,7 @@ func TestErrorType(t *testing.T) {
 		err := Find(func() error {
 			x = math.Inf(-1)
 			return nil
-		}, &x)
+		}, []*float64{&x}, []*float64{}, []*float64{})
 		if err == nil {
 			t.Errorf("have not errors")
 		}
@@ -276,7 +313,7 @@ func TestErrorType(t *testing.T) {
 		err := Find(func() error {
 			x = math.NaN()
 			return nil
-		}, &x)
+		}, []*float64{&x}, []*float64{}, []*float64{})
 		if err == nil {
 			t.Errorf("have not errors")
 		}
@@ -293,7 +330,7 @@ func TestErrorType(t *testing.T) {
 			}
 			b = !b
 			return nil
-		}, &x)
+		}, []*float64{&x}, []*float64{}, []*float64{})
 		if err == nil {
 			t.Errorf("have not errors")
 		}
