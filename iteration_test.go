@@ -10,6 +10,10 @@ import (
 // cpu: Intel(R) Xeon(R) CPU           X5550  @ 2.67GHz
 // Benchmark/single-8         	 3743305	       305.4 ns/op	       8 B/op	       1 allocs/op
 // Benchmark/two-8            	 1902074	       618.8 ns/op	      16 B/op	       1 allocs/op
+//
+// cpu: Intel(R) Xeon(R) CPU E3-1240 V2 @ 3.40GHz
+// Benchmark/single-6         	 5913253	       198.9 ns/op	       8 B/op	       1 allocs/op
+// Benchmark/two-6            	 3717120	       320.6 ns/op	      16 B/op	       1 allocs/op
 func Benchmark(b *testing.B) {
 	b.Run("single", func(b *testing.B) {
 		for n := 0; n < b.N; n++ {
@@ -103,6 +107,61 @@ func ExampleFind() {
 	// Value for iteration 17 is {4.99999897e+00,5.99997219e+00}
 	// Value for iteration 18 is {4.99999961e+00,5.99998874e+00}
 	// Value for iteration 19 is {4.99999985e+00,5.99999546e+00}
+}
+
+func Test(t *testing.T) {
+	eps := 1e-5
+	t.Run("float64", func(t *testing.T) {
+		var x, y float64
+		if err := Find(func() error {
+			y = 1 + x
+			x = 5
+			return nil
+		}, &x, &y); err != nil {
+			t.Fatal(err)
+		}
+		if e := math.Abs((float64(x) - 5) / 5); eps < e {
+			t.Errorf("not valid root")
+		}
+		if e := math.Abs((float64(y) - 6) / 6); eps < e {
+			t.Errorf("not valid root")
+		}
+	})
+	t.Run("F64", func(t *testing.T) {
+		type F64 float64
+		var x, y F64
+		if err := Find(func() error {
+			y = 1 + x
+			x = 5
+			return nil
+		}, &x, &y); err != nil {
+			t.Fatal(err)
+		}
+		if e := math.Abs((float64(x) - 5) / 5); eps < e {
+			t.Errorf("not valid root")
+		}
+		if e := math.Abs((float64(y) - 6) / 6); eps < e {
+			t.Errorf("not valid root")
+		}
+	})
+	// TODO t.Run("float64+F64", func(t *testing.T) {
+	// TODO 	type F64 float64
+	// TODO 	var x float64
+	// TODO 	var y F64
+	// TODO 	if err := Find(func() error {
+	// TODO 		y = 1 + F64(x)
+	// TODO 		x = 5
+	// TODO 		return nil
+	// TODO 	}, &x, &y); err != nil {
+	// TODO 		t.Fatal(err)
+	// TODO 	}
+	// TODO 	if e := math.Abs((float64(x) - 5) / 5); eps < e {
+	// TODO 		t.Errorf("not valid root")
+	// TODO 	}
+	// TODO 	if e := math.Abs((float64(y) - 6) / 6); eps < e {
+	// TODO 		t.Errorf("not valid root")
+	// TODO 	}
+	// TODO })
 }
 
 func TestFunc(t *testing.T) {

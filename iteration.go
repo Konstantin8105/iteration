@@ -93,7 +93,7 @@ func (et ErrType) String() string {
 }
 
 // Find result with many variable and default options
-func Find(f func() error, xs ...*float64) (err error) {
+func Find[F64  ~float64](f func() error, xs ...*F64) (err error) {
 	return FindWithOption(f, Option{
 		MaxIteration: MaxIteration,
 		Ratio:        Ratio,
@@ -102,7 +102,7 @@ func Find(f func() error, xs ...*float64) (err error) {
 }
 
 // FindWithOption result with many variable and option
-func FindWithOption(f func() error, option Option, xs ...*float64) (err error) {
+func FindWithOption[F64 ~float64](f func() error, option Option, xs... *F64) (err error) {
 	if option.MaxIteration <= 0 {
 		return ErrorFind{
 			Type: NotValidInput,
@@ -127,7 +127,7 @@ func FindWithOption(f func() error, option Option, xs ...*float64) (err error) {
 			Err:  fmt.Errorf("function is null"),
 		}
 	}
-	xLast := make([]float64, len(xs))
+	xLast := make([]F64, len(xs))
 	for i := range xs {
 		xLast[i] = *xs[i]
 	}
@@ -147,24 +147,24 @@ func FindWithOption(f func() error, option Option, xs ...*float64) (err error) {
 		}
 		exit = true
 		for i := range xLast {
-			if math.IsNaN(*xs[i]) {
+			if math.IsNaN(float64(*xs[i])) {
 				return ErrorFind{
 					Type: NotValidValue,
 					Err:  fmt.Errorf("parameter %d is NaN", i),
 				}
 			}
-			if math.IsInf(*xs[i], 0) {
+			if math.IsInf(float64(*xs[i]), 0) {
 				return ErrorFind{
 					Type: NotValidValue,
 					Err:  fmt.Errorf("parameter %d is infinity", i),
 				}
 			}
 			if xLast[i] == 0.0 {
-				if option.Precision < math.Abs(*xs[i]) {
+				if option.Precision < math.Abs(float64(*xs[i]) ){
 					exit = false
 				}
 			} else {
-				if option.Precision < math.Abs((*xs[i]-xLast[i])/xLast[i]) {
+				if option.Precision < math.Abs(float64((*xs[i]-xLast[i])/xLast[i])) {
 					exit = false
 				}
 			}
@@ -174,7 +174,7 @@ func FindWithOption(f func() error, option Option, xs ...*float64) (err error) {
 		}
 		// calculate value for next iteration
 		for i := range xLast {
-			*xs[i] = xLast[i] + (*xs[i]-xLast[i])*option.Ratio
+			*xs[i] = xLast[i] + (*xs[i]-xLast[i])*F64(option.Ratio)
 		}
 		// store last iteration value
 		for i := range xs {
