@@ -77,7 +77,7 @@ type ErrType int8
 
 // Error values
 const (
-	MaximalIteration ErrType = iota
+	MaximalIteration ErrType = iota + 1
 	InternalErr
 	NotValidValue
 	NotValidInput

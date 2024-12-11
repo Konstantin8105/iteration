@@ -1,6 +1,7 @@
 package iteration
 
 import (
+	"bytes"
 	"fmt"
 	"math"
 	"os"
@@ -208,11 +209,23 @@ func Test(t *testing.T) {
 			return nil
 		}
 		err := Find(step, []*float64{&x}, []*float64{}, []*float64{})
-		compare.Test(t, ".max.iteration",[]byte( fmt.Sprintf("%v", err)))
+		compare.Test(t, ".max.iteration", []byte(fmt.Sprintf("%v", err)))
 		if err == nil {
 			t.Errorf("cannot found max iter error")
 			return
 		}
+	})
+	t.Run("types", func(t *testing.T) {
+		var buf bytes.Buffer
+		for _, t := range []ErrType{
+			MaximalIteration,
+			InternalErr,
+			NotValidValue,
+			NotValidInput,
+		} {
+			fmt.Fprintf(&buf, "%d %T\n", t, t)
+		}
+		compare.Test(t, ".types", buf.Bytes())
 	})
 }
 
