@@ -59,12 +59,17 @@ type Option struct {
 
 // ErrorFind is typical errors of functions `Find`
 type ErrorFind struct {
-	Type ErrType
-	Err  error
+	Type          ErrType
+	Err           error
+	LastPrecision float64
 }
 
 func (e ErrorFind) Error() string {
-	return fmt.Sprintf("%s:%s", e.Type, e.Err)
+	out := fmt.Sprintf("%s:%s", e.Type, e.Err)
+	if 0.0 < e.LastPrecision {
+		out += fmt.Sprintf("\nLast precision = %.4e", e.LastPrecision)
+	}
+	return out
 }
 
 // ErrType is value of error
@@ -146,12 +151,14 @@ func FindWithOption[F64A ~float64, F64B ~float64, F64C ~float64](
 		xLastC[i] = *xsC[i]
 	}
 
-	var exitA, exitB, exitC bool
+	// var exitA, exitB, exitC bool
+	var prec [3]float64
 	for iter := 0; ; iter++ {
 		if iter >= option.MaxIteration {
 			return ErrorFind{
-				Type: MaximalIteration,
-				Err:  fmt.Errorf("%d >= %d", iter, option.MaxIteration),
+				Type:          MaximalIteration,
+				Err:           fmt.Errorf("%d >= %d", iter, option.MaxIteration),
+				LastPrecision: max(prec[0], prec[1], prec[2]),
 			}
 		}
 		if err = f(); err != nil {
@@ -160,55 +167,51 @@ func FindWithOption[F64A ~float64, F64B ~float64, F64C ~float64](
 				Err:  err,
 			}
 		}
-		// xsA
-		exitA, err = compare(xLastA, xsA, option)
-		if err != nil {
+		// A
+		if prec[0], err = compareX(xLastA, xsA, option); err != nil {
 			return
 		}
-		// xsB
-		exitB, err = compare(xLastB, xsB, option)
-		if err != nil {
+		// B
+		if prec[1], err = compareX(xLastB, xsB, option); err != nil {
 			return
 		}
-		// xsC
-		exitC, err = compare(xLastC, xsC, option)
-		if err != nil {
+		// C
+		if prec[2], err = compareX(xLastC, xsC, option); err != nil {
 			return
 		}
-		// is exit
-		if exitA && exitB && exitC {
+		// compare precision
+		if max(prec[0], prec[1], prec[2]) <= option.Precision {
 			break
 		}
 	}
 	return nil
 }
 
-func compare[F64 ~float64](xLast []F64, xs []*F64, option Option) (exit bool, err error) {
-	exit = true
+func compareX[F64 ~float64](xLast []F64, xs []*F64, option Option) (prec float64, err error) {
+	var dx float64
 	for i := range xLast {
 		if math.IsNaN(float64(*xs[i])) {
-			return true, ErrorFind{
+			err = ErrorFind{
 				Type: NotValidValue,
 				Err:  fmt.Errorf("parameter %d is NaN", i),
 			}
+			return
 		}
 		if math.IsInf(float64(*xs[i]), 0) {
-			return true, ErrorFind{
+			err = ErrorFind{
 				Type: NotValidValue,
 				Err:  fmt.Errorf("parameter %d is infinity", i),
 			}
+			return
 		}
 		if xLast[i] == 0.0 {
-			if option.Precision < math.Abs(float64(*xs[i])) {
-				exit = false
-			}
+			dx = math.Abs(float64(*xs[i]))
 		} else {
-			if option.Precision < math.Abs(float64((*xs[i]-xLast[i])/xLast[i])) {
-				exit = false
-			}
+			dx = math.Abs(float64((*xs[i] - xLast[i]) / xLast[i]))
 		}
+		prec = max(prec, dx)
 	}
-	if !exit {
+	if option.Precision < prec {
 		// calculate value for next iteration
 		for i := range xLast {
 			*xs[i] = xLast[i] + (*xs[i]-xLast[i])*F64(option.Ratio)

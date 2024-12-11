@@ -5,6 +5,8 @@ import (
 	"math"
 	"os"
 	"testing"
+
+	"github.com/Konstantin8105/compare"
 )
 
 // cpu: Intel(R) Xeon(R) CPU           X5550  @ 2.67GHz
@@ -197,6 +199,19 @@ func Test(t *testing.T) {
 		}
 		if e := math.Abs((float64(y) - 6) / 6); eps < e {
 			t.Errorf("not valid root")
+		}
+	})
+	t.Run("max iteration", func(t *testing.T) {
+		var x float64
+		step := func() error {
+			x += 1.0e-5
+			return nil
+		}
+		err := Find(step, []*float64{&x}, []*float64{}, []*float64{})
+		compare.Test(t, ".max.iteration",[]byte( fmt.Sprintf("%v", err)))
+		if err == nil {
+			t.Errorf("cannot found max iter error")
+			return
 		}
 	})
 }
